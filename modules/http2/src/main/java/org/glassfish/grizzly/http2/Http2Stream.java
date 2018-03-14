@@ -356,11 +356,7 @@ public class Http2Stream implements AttributeStorage, OutputSink, Closeable {
             final CloseType closeType,
             final IOException cause,
             final boolean isCloseOutputGracefully) {
-        
-        if (closeReason != null) {
-            return;
-        }
-        
+
         if (closeReasonUpdater.compareAndSet(this, null,
                 new CloseReason(closeType, cause))) {
             
