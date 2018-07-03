@@ -67,6 +67,7 @@ public class AlpnSupportTest extends AbstractHttp2Test {
             if (AlpnSupport.getConnection(engine) == null) {
                 break;
             }
+            System.gc();
             Thread.sleep(1000);
         }
 
