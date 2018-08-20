@@ -146,10 +146,10 @@ class DefaultOutputSink implements StreamOutputSink {
         }
         // update the available window size
         availStreamWindowSize.addAndGet(delta);
-        
+
         // try to write until window limit allows
-        while (isWantToWrite() &&
-            !outputQueue.isEmpty()) {
+        while ((isWantToWrite() && !outputQueue.isEmpty())
+            || (outputQueue.peek() != null && outputQueue.peek().trailer != null)) {
             
             // pick up the first output record in the queue
             OutputQueueRecord outputQueueRecord = outputQueue.poll();
@@ -178,6 +178,7 @@ class DefaultOutputSink implements StreamOutputSink {
 
             if (currentTrailer != null) {
                 try {
+                    outputQueueRecord = null;
                     sendTrailers(completionHandler, messageCloner, currentTrailer);
                 } catch (IOException ex) {
                     LOGGER.log(WARNING, "Error sending trailers.", ex);
@@ -233,18 +234,7 @@ class DefaultOutputSink implements StreamOutputSink {
         }
 
         if (outputQueue.peek() != null && outputQueue.peek().trailer != null) {
-            // pick up the first output record in the queue
-            final OutputQueueRecord outputQueueRecord = outputQueue.poll();
-
-            final FlushCompletionHandler completionHandler = outputQueueRecord.chunkedCompletionHandler;
-            final HttpTrailer currentTrailer = outputQueueRecord.trailer;
-            final MessageCloner messageCloner = outputQueueRecord.cloner;
-            try {
-                sendTrailers(completionHandler, messageCloner, currentTrailer);
-            } catch (IOException ex) {
-                LOGGER.log(WARNING, "Error sending trailers.", ex);
-            }
-            return;
+            LOGGER.warning("Trailer frame is going to get ignored.");
         }
     }
 
@@ -372,7 +362,7 @@ class DefaultOutputSink implements StreamOutputSink {
                                 .createBufferSource(data),
                             flushCompletionHandler,
                             (HttpTrailer) httpContent,
-                            isZeroSizeData);
+                            false);
                 } else {
                     outputQueueRecord = new OutputQueueRecord(
                             Source.factory(stream)
