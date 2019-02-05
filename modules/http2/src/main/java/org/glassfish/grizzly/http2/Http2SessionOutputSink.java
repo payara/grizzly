@@ -52,7 +52,7 @@ public class Http2SessionOutputSink {
     private static final int MAX_OUTPUT_QUEUE_SIZE = 65536;
 
     // async output queue
-    private final TaskQueue<Http2SessionOutputSink.OutputQueueRecord> outputQueue =
+    private final TaskQueue<Http2OutputQueueRecord> outputQueue =
             TaskQueue.createTaskQueue(new TaskQueue.MutableMaxQueueSize() {
 
                 @Override
@@ -182,7 +182,7 @@ public class Http2SessionOutputSink {
             data = messageCloner.clone(http2Session.getConnection(), data);
         }
 
-        final Http2SessionOutputSink.OutputQueueRecord record = new Http2SessionOutputSink.OutputQueueRecord(
+        final Http2OutputQueueRecord record = new Http2OutputQueueRecord(
                 stream.getId(), data,
                 completionHandler, isLast);
 
@@ -227,7 +227,7 @@ public class Http2SessionOutputSink {
             while (availWindowSize > bytesToTransfer &&
                     queueSize > queueSizeToFree) {
 
-                final Http2SessionOutputSink.OutputQueueRecord record = outputQueue.poll();
+                final Http2OutputQueueRecord record = outputQueue.poll();
 
                 if (record == null) {
                     // keep this warning for now
@@ -315,98 +315,4 @@ public class Http2SessionOutputSink {
         outputQueue.onClose();
     }
 
-    private static class OutputQueueRecord extends AsyncQueueRecord<WriteResult> {
-        private final int streamId;
-
-        private ChunkedCompletionHandler chunkedCompletionHandler;
-        private final CompletionHandler<WriteResult> originalCompletionHandler;
-        private Buffer buffer;
-        private final boolean isLast;
-
-        private final boolean isZeroSizeData;
-
-        public OutputQueueRecord(final int streamId,
-                                 final Buffer buffer,
-                                 final CompletionHandler<WriteResult> completionHandler,
-                                 final boolean isLast) {
-            super(null, null, null);
-
-            this.streamId = streamId;
-            this.buffer = buffer;
-            this.isZeroSizeData = !buffer.hasRemaining();
-            this.originalCompletionHandler = completionHandler;
-            this.isLast = isLast;
-        }
-
-        public CompletionHandler<WriteResult> getCompletionHandler() {
-            return chunkedCompletionHandler != null ?
-                    chunkedCompletionHandler :
-                    originalCompletionHandler;
-        }
-
-        @Override
-        public void notifyFailure(final Throwable e) {
-            final CompletionHandler<WriteResult> chLocal = getCompletionHandler();
-            if (chLocal != null) {
-                chLocal.failed(e);
-            }
-        }
-
-        @Override
-        public void recycle() {
-        }
-
-        @Override
-        public WriteResult getCurrentResult() {
-            return null;
-        }
-
-        private boolean isZeroSizeData() {
-            return isZeroSizeData;
-        }
-
-        private boolean isFinished() {
-            return buffer == null;
-        }
-
-        private int serializeTo(final List<Http2Frame> frames,
-                                final int maxDataSize) {
-
-            final int recordSize = buffer.remaining();
-
-            if (recordSize <= maxDataSize) {
-                final DataFrame dataFrame = DataFrame.builder()
-                        .streamId(streamId)
-                        .data(buffer).endStream(isLast)
-                        .build();
-
-                frames.add(dataFrame);
-
-                buffer = null;
-
-                return recordSize;
-            } else {
-                if (originalCompletionHandler != null && chunkedCompletionHandler == null) {
-                    chunkedCompletionHandler = new ChunkedCompletionHandler(originalCompletionHandler);
-                }
-
-                if (chunkedCompletionHandler != null) {
-                    chunkedCompletionHandler.incChunks();
-                }
-
-                final Buffer remainder = buffer.split(buffer.position() + maxDataSize);
-
-                final DataFrame dataFrame = DataFrame.builder()
-                        .streamId(streamId)
-                        .data(buffer).endStream(false)
-                        .build();
-
-                frames.add(dataFrame);
-
-                buffer = remainder;
-
-                return maxDataSize;
-            }
-        }
-    }
 }
