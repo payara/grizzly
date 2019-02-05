@@ -1036,10 +1036,10 @@ public class Http2ServerFilter extends Http2BaseFilter {
                             }
                         }
                     }
+                    pushStream.onSendPushPromise();
                     http2Session.getOutputSink().writeDownStream(pushPromiseFrames);
 
                 } finally {
-                    pushStream.onSendPushPromise();
                     http2Session.getDeflaterLock().unlock();
                 }
             } finally {
