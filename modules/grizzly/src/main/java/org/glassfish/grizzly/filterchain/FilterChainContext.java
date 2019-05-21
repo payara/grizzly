@@ -1,6 +1,6 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
- *
+ * 
  * Copyright (c) 2008-2017 Oracle and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
@@ -972,7 +972,9 @@ public class FilterChainContext implements AttributeStorage {
      * this {@link FilterChainContext} processing will be completed.
      */
     public final void addCompletionListener(final CompletionListener listener) {
-        completionListeners.add(listener);
+        if (!completionListeners.contains(listener)) {
+            completionListeners.add(listener);
+        }
     }
 
     /**

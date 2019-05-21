@@ -154,8 +154,7 @@ public final class DefaultFilterChain extends ListFacadeFilterChain {
                 }
             } while (prepareRemainder(ctx, filtersState));
         } catch (Throwable e) {
-            LOGGER.log(e instanceof IOException ? Level.FINE : Level.WARNING,
-                    LogMessages.WARNING_GRIZZLY_FILTERCHAIN_EXCEPTION(), e);
+            LOGGER.log(e instanceof IOException ? Level.FINE : Level.WARNING, LogMessages.WARNING_GRIZZLY_FILTERCHAIN_EXCEPTION(), e);
             throwChain(ctx, executor, e);
             ctx.getCloseable().closeWithReason(Exceptions.makeIOException(e));
 
@@ -504,12 +503,18 @@ public final class DefaultFilterChain extends ListFacadeFilterChain {
      * @param filterIdx the current filter index
      */
     @SuppressWarnings("unchecked")
-    private void checkStoredMessage(final FilterChainContext ctx,
-            final FiltersState filtersState, final int filterIdx) {
+    private void checkStoredMessage(final FilterChainContext ctx, final FiltersState filtersState, final int filterIdx) {
 
         if (filtersState != null) {
+            Object message = ctx.getMessage();
+            if (message instanceof Buffer) {
+                Buffer bufferMessage = (Buffer) message;
+                if (!bufferMessage.hasRemaining()) {
+                    return;
+                }
+            }
             ctx.setMessage(filtersState.append(ctx.getOperation(),
-                    filterIdx, ctx.getMessage()));
+                    filterIdx, message));
         }
     }
 
@@ -589,8 +594,7 @@ public final class DefaultFilterChain extends ListFacadeFilterChain {
             return null;
         }
 
-        public <M> void set(final Operation operation, final int filterIndex,
-                final boolean isIncomplete, final M messageToStore,
+        public <M> void set(final Operation operation, final int filterIndex, final boolean isIncomplete, final M messageToStore,
             final Appender<M> appender) {
             final int opIdx = operation.ordinal();
             
@@ -598,13 +602,11 @@ public final class DefaultFilterChain extends ListFacadeFilterChain {
             if (elem != null) {
                 elem.set(isIncomplete, messageToStore, appender);
             } else {
-                state[opIdx][filterIndex] = FilterStateElement.create(isIncomplete,
-                        messageToStore, appender);
+                state[opIdx][filterIndex] = FilterStateElement.create(isIncomplete, messageToStore, appender);
             }
         }
 
-        public int peekUnparsedIdx(final Operation operation,
-                final int start, final int end) {
+        public int peekUnparsedIdx(final Operation operation, final int start, final int end) {
             
             if (start == end) {
                 return -1;
@@ -640,25 +642,19 @@ public final class DefaultFilterChain extends ListFacadeFilterChain {
 
     private static final class FilterStateElement {
 
-        static FilterStateElement create(
-                final boolean isIncomplete,
-                final Object remainder) {
+        static FilterStateElement create(final boolean isIncomplete, final Object remainder) {
             if (remainder instanceof Buffer) {
-                return create(isIncomplete, (Buffer) remainder,
-                        Buffers.getBufferAppender(true));
+                return create(isIncomplete, (Buffer) remainder, Buffers.getBufferAppender(true));
             } else {
                 return create(isIncomplete, (Appendable) remainder);
             }
         }
 
-        static FilterStateElement create(
-                final boolean isIncomplete, final Appendable state) {
+        static FilterStateElement create(final boolean isIncomplete, final Appendable state) {
             return new FilterStateElement(isIncomplete, state);
         }
 
-        static <E> FilterStateElement create(
-                final boolean isIncomplete,
-                final E state, final Appender<E> appender) {
+        static <E> FilterStateElement create(final boolean isIncomplete, final E state, final Appender<E> appender) {
             return new FilterStateElement(isIncomplete, state, appender);
         }
         
@@ -699,11 +695,17 @@ public final class DefaultFilterChain extends ListFacadeFilterChain {
         
         @SuppressWarnings("unchecked")
         private Object append(final Object currentMessage) {
-            final Object resultMessage = currentMessage != null ?
-                    (appender != null ?
-                        appender.append(state, currentMessage) :
-                        ((Appendable) state).append(currentMessage)) :
-                    state;
+            Object resultMessage;
+            if (currentMessage != null ) {
+                if (appender != null) {
+                    resultMessage = appender.append(state, currentMessage);
+                } else {
+                    resultMessage = ((Appendable) state).append(currentMessage);
+                }
+
+            } else {
+                resultMessage = state;
+            }
 
             state = null;
             appender = null;
