@@ -1,7 +1,8 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) 2012-2016 Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012-2019 Oracle and/or its affiliates and others.
+ * All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
@@ -36,6 +37,9 @@
  * and therefore, elected the GPL Version 2 license, then the option applies
  * only if the new code is made subject to such option by the copyright
  * holder.
+ * 
+ * Contributors:
+ *   Payara Services - Propagate stop action on a closed SSL connection
  */
 
 package org.glassfish.grizzly.ssl;
@@ -466,7 +470,11 @@ public class SSLBaseFilter extends BaseFilter {
 
             if (output.hasRemaining() || isClosed) {
                 ctx.setMessage(output);
-                return ctx.getInvokeAction(makeInputRemainder(sslCtx, ctx, input));
+                if (!isClosed) {
+                    return ctx.getInvokeAction(makeInputRemainder(sslCtx, ctx, input));
+                } else {
+                    LOGGER.finer("Closed SSL connection detected, terminating chain.");
+                }
             }
         }
 
