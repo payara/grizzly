@@ -988,6 +988,14 @@ public class SSLBaseFilter extends BaseFilter {
         }
     }
 
+    protected void notifyHandshakeInit(final Connection<?> connection, final SSLEngine sslEngine) {
+        if (!handshakeListeners.isEmpty()) {
+            for (final HandshakeListener listener : handshakeListeners) {
+                listener.onInit(connection, sslEngine);
+            }
+        }
+    }
+
     protected void notifyHandshakeStart(final Connection connection) {
         if (!handshakeListeners.isEmpty()) {
             for (final HandshakeListener listener : handshakeListeners) {
@@ -1083,12 +1091,6 @@ public class SSLBaseFilter extends BaseFilter {
 
     } // END InternalProcessingHandler
     
-    public interface HandshakeListener {
-        void onStart(Connection<?> connection);
-        void onComplete(Connection<?> connection);
-        void onFailure(Connection<?> connection, Throwable t);
-    }
-    
     protected static class SSLTransportFilterWrapper extends TransportFilter {
         protected final TransportFilter wrappedFilter;
         protected final SSLBaseFilter sslBaseFilter;
@@ -1117,6 +1119,7 @@ public class SSLBaseFilter extends BaseFilter {
             
             if (sslCtx.getSslEngine() == null) {
                 final SSLEngine sslEngine = sslBaseFilter.serverSSLEngineConfigurator.createSSLEngine();
+                sslBaseFilter.notifyHandshakeInit(connection, sslEngine);
                 sslEngine.beginHandshake();
                 sslCtx.configure(sslEngine);
                 sslBaseFilter.notifyHandshakeStart(connection);
