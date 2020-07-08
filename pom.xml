@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.glassfish.grizzly</groupId>
         <artifactId>grizzly-bom</artifactId>
-        <version>2.4.4.payara-p2</version>
+        <version>2.4.4.payara-p4-SNAPSHOT</version>
         <relativePath>bom/pom.xml</relativePath>
     </parent>
 
@@ -28,7 +28,7 @@
     <artifactId>grizzly-project</artifactId>
     <packaging>pom</packaging>
     <name>grizzly-project</name>
-    <version>2.4.4.payara-p2</version>
+    <version>2.4.4.payara-p4-SNAPSHOT</version>
     <url>http://grizzly.java.net</url>
     <issueManagement>
         <system>GitHub</system>
@@ -441,6 +441,6 @@
         <findbugs.skip>false</findbugs.skip>
         <findbugs.common>exclude-common.xml</findbugs.common>
         <jdk.compile.version>1.8</jdk.compile.version>
-        <grizzly.alpn.version>1.8</grizzly.alpn.version>
+        <grizzly.alpn.version>1.9.payara-p1</grizzly.alpn.version>
     </properties>
 </project>
