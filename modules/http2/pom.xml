@@ -27,8 +27,10 @@
     <modelVersion>4.0.0</modelVersion>
     <artifactId>grizzly-http2</artifactId>
     <!--<packaging>bundle</packaging>-->
-    <version>2.4.4.payara-p4-SNAPSHOT</version>
     <name>grizzly-http2</name>
+    <properties>
+        <bootClasspath></bootClasspath>
+    </properties>
     <build>
         <defaultGoal>install</defaultGoal>
         <plugins>
@@ -83,9 +85,7 @@
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>
-                        -XX:+HeapDumpOnOutOfMemoryError -Xbootclasspath/p:${settings.localRepository}/org/glassfish/grizzly/grizzly-npn-bootstrap/1.8/grizzly-npn-bootstrap-1.8.jar
-                    </argLine>
+                    <argLine>-XX:+HeapDumpOnOutOfMemoryError ${bootClasspath}</argLine>
                 </configuration>
             </plugin>
         </plugins>
@@ -118,7 +118,7 @@
         <dependency>
             <groupId>org.glassfish.grizzly</groupId>
             <artifactId>grizzly-npn-api</artifactId>
-            <version>${grizzly.alpn.version}</version>
+            <version>${grizzly.npn.api.version}</version>
             <scope>provided</scope>
         </dependency>
 
@@ -128,6 +128,36 @@
             <version>2.18.3</version>
             <scope>test</scope>
         </dependency>
-
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>opensse</id>
+            <properties>
+                <bootClasspath>-Xbootclasspath/p:${settings.localRepository}/org/openjsse/openjsse/${openjsse.version}/openjsse-${openjsse.version}.jar</bootClasspath>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.openjsse</groupId>
+                    <artifactId>openjsse</artifactId>
+                    <version>${openjsse.version}</version>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+        <profile>
+            <id>npn</id>
+            <properties>
+                <bootClasspath>-Xbootclasspath/p:${settings.localRepository}/org/glassfish/grizzly/grizzly-npn-bootstrap/${grizzly.npn.bootstrap.version}/grizzly-npn-bootstrap-${grizzly.npn.bootstrap.version}.jar</bootClasspath>
+            </properties>
+            <dependencies>
+                <dependency>
+                    <groupId>org.glassfish.grizzly</groupId>
+                    <artifactId>grizzly-npn-api</artifactId>
+                    <version>${grizzly.npn.bootstrap.version}</version>
+                    <scope>provided</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
