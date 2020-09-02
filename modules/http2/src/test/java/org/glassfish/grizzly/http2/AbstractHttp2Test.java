@@ -16,11 +16,12 @@
 
 package org.glassfish.grizzly.http2;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.LinkedList;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import org.glassfish.grizzly.Buffer;
 import org.glassfish.grizzly.Grizzly;
@@ -45,14 +46,23 @@ import org.glassfish.grizzly.ssl.SSLFilter;
 
 /**
  * General HTTP2 client/server init code.
- * 
+ *
  * @author Alexey Stashok
  */
 public abstract class AbstractHttp2Test {
+    static {
+        try {
+            LogManager.getLogManager().readConfiguration(AbstractHttp2Test.class.getResourceAsStream("/logging.properties"));
+        } catch (SecurityException | IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
     protected static final Logger LOGGER = Grizzly.logger(AbstractHttp2Test.class);
-    
+
     private volatile static SSLEngineConfigurator clientSSLEngineConfigurator;
-    private volatile static SSLEngineConfigurator serverSSLEngineConfigurator;    
+    private volatile static SSLEngineConfigurator serverSSLEngineConfigurator;
 
     public static Collection<Object[]> configure() {
         return Arrays.asList(new Object[][]{
@@ -62,17 +72,17 @@ public abstract class AbstractHttp2Test {
                 //{ (AlpnSupport.isEnabled() && !Boolean.valueOf(System.getProperty("grizzly.skip.http2tls", "false"))), Boolean.FALSE }, // secure
         });
     }
-    
+
     protected Http2AddOn http2Addon;
-    
+
     protected HttpServer createServer(final String docRoot, final int port,
             final boolean isSecure,
             final HttpHandlerRegistration... registrations) {
-        
+
         return createServer(docRoot, port, isSecure,
                 false, registrations);
     }
-    
+
     protected HttpServer createServer(final String docRoot, final int port,
             final boolean isSecure,
             final boolean isFileCacheEnabled,
@@ -80,7 +90,7 @@ public abstract class AbstractHttp2Test {
         HttpServer server = HttpServer.createSimpleServer(docRoot, port);
         NetworkListener listener = server.getListener("grizzly");
         listener.setSendFileEnabled(false);
-        
+
         listener.getFileCache().setEnabled(isFileCacheEnabled);
 
         if (isSecure) {
@@ -90,21 +100,21 @@ public abstract class AbstractHttp2Test {
 
         http2Addon = new Http2AddOn(Http2Configuration.builder().disableCipherCheck(true).build());
         listener.registerAddOn(http2Addon);
-        
+
         ServerConfiguration sconfig = server.getServerConfiguration();
-        
+
         for (HttpHandlerRegistration registration : registrations) {
             sconfig.addHttpHandler(registration.httpHandler, registration.mappings);
         }
-        
+
         return server;
     }
-    
+
 
     protected static FilterChain createClientFilterChain(
             final boolean isSecure,
             final Filter... clientFilters) {
-        
+
         return createClientFilterChainAsBuilder(isSecure, false,
                 clientFilters).build();
     }
@@ -114,23 +124,23 @@ public abstract class AbstractHttp2Test {
             final Filter... clientFilters) {
         return createClientFilterChainAsBuilder(isSecure, false, clientFilters);
     }
-    
+
 
     protected static FilterChainBuilder createClientFilterChainAsBuilder(
             final boolean isSecure,
             final boolean priorKnowledge,
             final Filter... clientFilters) {
-        
+
         final FilterChainBuilder builder = FilterChainBuilder.stateless()
              .add(new TransportFilter());
         if (isSecure) {
             builder.add(new SSLFilter(null, getClientSSLEngineConfigurator()));
         }
-        
-        
+
+
         builder.add(new HttpClientFilter());
         builder.add(new Http2ClientFilter(Http2Configuration.builder().priorKnowledge(priorKnowledge).build()));
-        
+
         if (clientFilters != null) {
             for (Filter clientFilter : clientFilters) {
                 if (clientFilter != null) {
@@ -138,15 +148,15 @@ public abstract class AbstractHttp2Test {
                 }
             }
         }
-        
+
         return builder;
     }
-    
+
     protected static SSLEngineConfigurator getClientSSLEngineConfigurator() {
         checkSSLEngineConfigurators();
         return clientSSLEngineConfigurator;
     }
-    
+
     protected static SSLEngineConfigurator getServerSSLEngineConfigurator() {
         checkSSLEngineConfigurators();
         return serverSSLEngineConfigurator;
@@ -172,7 +182,7 @@ public abstract class AbstractHttp2Test {
             }
         }
     }
-    
+
     protected static SSLContextConfigurator createSSLContextConfigurator() {
         SSLContextConfigurator sslContextConfigurator =
                 new SSLContextConfigurator();
@@ -193,7 +203,7 @@ public abstract class AbstractHttp2Test {
 
         return sslContextConfigurator;
     }
-    
+
     @SuppressWarnings({"unchecked"})
     protected HttpPacket createRequest(final int port,
             final String method,
@@ -221,13 +231,13 @@ public abstract class AbstractHttp2Test {
             }
 
             request.setContentLength(contentBuffer.remaining());
-            
+
             if (encoding != null) {
                 request.setCharacterEncoding(encoding);
             }
-            
+
             request.setContentType("text/plain");
-            
+
             cb.content(contentBuffer);
             cb.last(true);
             return cb.build();
@@ -236,7 +246,7 @@ public abstract class AbstractHttp2Test {
 
         return request;
     }
-    
+
     protected static class HttpHandlerRegistration {
         private final HttpHandler httpHandler;
         private final String[] mappings;
@@ -245,7 +255,7 @@ public abstract class AbstractHttp2Test {
             this.httpHandler = httpHandler;
             this.mappings = mappings;
         }
-        
+
         public static HttpHandlerRegistration of(final HttpHandler httpHandler,
                 final String... mappings) {
             return new HttpHandlerRegistration(httpHandler, mappings);
