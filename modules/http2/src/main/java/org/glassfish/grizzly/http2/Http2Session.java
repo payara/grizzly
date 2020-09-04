@@ -963,7 +963,7 @@ public class Http2Session {
             final Buffer compressedHeaders,
             List<Http2Frame> toList) {
         // we assume deflaterLock is acquired and held by this thread
-        assert deflaterLock.isHeldByCurrentThread();
+        assert getDeflaterLock().isHeldByCurrentThread();
 
         if (toList == null) {
             toList = tmpHeaderFramesList;

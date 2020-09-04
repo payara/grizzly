@@ -138,7 +138,7 @@ public class TrailersTest extends AbstractHttp2Test {
                 return ctx.getStopAction();
             }
         };
-        final Connection c = getConnection("localhost", PORT, filter);
+        final Connection<?> c = getConnection("localhost", PORT, filter);
         HttpRequestPacket.Builder builder = HttpRequestPacket.builder();
         HttpRequestPacket request = builder.method(Method.POST)
                 .uri("/echo")
@@ -204,7 +204,7 @@ public class TrailersTest extends AbstractHttp2Test {
                 return ctx.getStopAction();
             }
         };
-        final Connection c = getConnection("localhost", PORT, filter);
+        final Connection<?> c = getConnection("localhost", PORT, filter);
         HttpRequestPacket.Builder builder = HttpRequestPacket.builder();
         HttpRequestPacket request = builder.method(Method.POST)
                 .uri("/echo")
