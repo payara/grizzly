@@ -1208,4 +1208,15 @@ public class SSLBaseFilter extends BaseFilter {
             return originalMessage;
         }
     }
+
+
+    // don't move to own file, Tyrus has a dependency on this interface
+    public interface HandshakeListener {
+        default void onInit(Connection<?> connection, SSLEngine sslEngine) {
+            // nothing
+        }
+        void onStart(Connection<?> connection);
+        void onComplete(Connection<?> connection);
+        void onFailure(Connection<?> connection, Throwable t);
+    }
 }
