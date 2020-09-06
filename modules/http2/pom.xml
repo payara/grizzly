@@ -132,7 +132,7 @@
 
     <profiles>
         <profile>
-            <id>opensse</id>
+            <id>openjsse</id>
             <properties>
                 <bootClasspath>-Xbootclasspath/p:${settings.localRepository}/org/openjsse/openjsse/${openjsse.version}/openjsse-${openjsse.version}.jar</bootClasspath>
             </properties>

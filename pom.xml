@@ -441,8 +441,8 @@
         <findbugs.skip>false</findbugs.skip>
         <findbugs.common>exclude-common.xml</findbugs.common>
         <jdk.compile.version>1.8</jdk.compile.version>
-        <grizzly.npn.api.version>1.9.payara-p2-SNAPSHOT</grizzly.npn.api.version>
-        <grizzly.npn.bootstrap.version>1.9.payara-p2-SNAPSHOT</grizzly.npn.bootstrap.version>
+        <grizzly.npn.api.version>1.9.payara-p2</grizzly.npn.api.version>
+        <grizzly.npn.bootstrap.version>1.9.payara-p2</grizzly.npn.bootstrap.version>
         <openjsse.version>1.1.4</openjsse.version>
     </properties>
 </project>
