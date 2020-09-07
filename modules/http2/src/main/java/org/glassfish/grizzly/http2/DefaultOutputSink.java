@@ -306,7 +306,6 @@ class DefaultOutputSink implements StreamOutputSink {
             }
 
             // if there is nothing to write - return
-            // FIXME: breaks TrailersTest
             if (httpContent == null) {
                 return;
             }
