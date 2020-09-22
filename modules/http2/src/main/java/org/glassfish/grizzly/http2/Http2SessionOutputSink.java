@@ -29,18 +29,16 @@ import org.glassfish.grizzly.CompletionHandler;
 import org.glassfish.grizzly.Grizzly;
 import org.glassfish.grizzly.WriteHandler;
 import org.glassfish.grizzly.WriteResult;
-import org.glassfish.grizzly.asyncqueue.AsyncQueueRecord;
 import org.glassfish.grizzly.asyncqueue.MessageCloner;
 import org.glassfish.grizzly.asyncqueue.TaskQueue;
 import org.glassfish.grizzly.http2.frames.DataFrame;
 import org.glassfish.grizzly.http2.frames.ErrorCode;
 import org.glassfish.grizzly.http2.frames.Http2Frame;
-import org.glassfish.grizzly.http2.utils.ChunkedCompletionHandler;
 
 /**
  * Class represents an output sink associated with specific {@link Http2Session}
  * and is responsible for session (connection) level flow control.
- * 
+ *
  * @author Alexey Stashok
  */
 public class Http2SessionOutputSink {
@@ -74,9 +72,9 @@ public class Http2SessionOutputSink {
     protected Http2FrameCodec frameCodec() {
         return http2Session.handlerFilter.frameCodec;
     }
-    
+
     protected void writeDownStream(final Http2Frame frame) {
-        
+
         http2Session.getHttp2SessionChain().write(
                 http2Session.getConnection(), null,
                 frameCodec().serializeAndRecycle(http2Session, frame),
@@ -84,18 +82,18 @@ public class Http2SessionOutputSink {
     }
 
     protected void writeDownStream(final List<Http2Frame> frames) {
-        
+
         http2Session.getHttp2SessionChain().write(
                 http2Session.getConnection(), null,
                 frameCodec().serializeAndRecycle(http2Session, frames),
                 null, (MessageCloner) null);
     }
-    
+
     @SuppressWarnings("unchecked")
     protected <K> void writeDownStream(final K anyMessage,
             final CompletionHandler<WriteResult> completionHandler,
             final MessageCloner<Buffer> messageCloner) {
-        
+
         // Encode Http2Frame -> Buffer
         final Object msg;
         if (anyMessage instanceof List) {
@@ -107,9 +105,9 @@ public class Http2SessionOutputSink {
         } else {
             msg = anyMessage;
         }
-        
+
         http2Session.getHttp2SessionChain().write(http2Session.getConnection(),
-                null, msg, completionHandler, messageCloner);        
+                null, msg, completionHandler, messageCloner);
     }
 
     protected int getAvailablePeerConnectionWindowSize() {
@@ -168,7 +166,6 @@ public class Http2SessionOutputSink {
             }
 
             writeDownStream(msg, completionHandler, messageCloner);
-
             return;
         } else if (headerFrames != null && !headerFrames.isEmpty()) {
             // flush the headers now in this thread,
