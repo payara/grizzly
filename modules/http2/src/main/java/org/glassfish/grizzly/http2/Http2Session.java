@@ -13,7 +13,7 @@
  * https://www.gnu.org/software/classpath/license.html.
  *
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
- * 
+ *
  * Contributors:
  *  Payara Services - Prevent push when globally disabled
  */
@@ -892,8 +892,6 @@ public class Http2Session {
             final Map<String,String> capture)
             throws IOException {
 
-        final boolean logging = NetLogger.isActive();
-
         final List<Http2Frame> headerFrames =
                 bufferToPushPromiseFrames(
                         streamId,
@@ -965,7 +963,7 @@ public class Http2Session {
             final Buffer compressedHeaders,
             List<Http2Frame> toList) {
         // we assume deflaterLock is acquired and held by this thread
-        assert deflaterLock.isHeldByCurrentThread();
+        assert getDeflaterLock().isHeldByCurrentThread();
 
         if (toList == null) {
             toList = tmpHeaderFramesList;

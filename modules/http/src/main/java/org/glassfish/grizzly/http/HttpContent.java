@@ -36,7 +36,7 @@ import org.glassfish.grizzly.memory.Buffers;
  */
 public class HttpContent extends HttpPacket
         implements org.glassfish.grizzly.Appendable<HttpContent> {
-    
+
     private static final ThreadCache.CachedTypeIndex<HttpContent> CACHE_IDX =
             ThreadCache.obtainIndex(HttpContent.class, 16);
 
@@ -72,27 +72,25 @@ public class HttpContent extends HttpPacket
             final boolean isLast) {
         return create(httpHeader, isLast, Buffers.EMPTY_BUFFER);
     }
-    
+
     public static HttpContent create(final HttpHeader httpHeader,
             final boolean isLast, Buffer content) {
         content = content != null ? content : Buffers.EMPTY_BUFFER;
-        
-        final HttpContent httpContent =
-                ThreadCache.takeFromCache(CACHE_IDX);
+        final HttpContent httpContent = ThreadCache.takeFromCache(CACHE_IDX);
         if (httpContent != null) {
             httpContent.httpHeader = httpHeader;
             httpContent.isLast = isLast;
             httpContent.content = content;
-            
+
             return httpContent;
         }
 
         return new HttpContent(httpHeader, isLast, content);
     }
-    
+
     /**
      * Returns {@link HttpContent} builder.
-     * 
+     *
      * @param httpHeader related HTTP message header
      * @return {@link Builder}.
      */
@@ -101,7 +99,7 @@ public class HttpContent extends HttpPacket
     }
 
     protected boolean isLast;
-    
+
     protected Buffer content = Buffers.EMPTY_BUFFER;
 
     protected HttpHeader httpHeader;
@@ -120,7 +118,7 @@ public class HttpContent extends HttpPacket
         this.isLast = isLast;
         this.content = content;
     }
-    
+
     /**
      * Get the HTTP message content {@link Buffer}.
      *
@@ -147,7 +145,7 @@ public class HttpContent extends HttpPacket
     /**
      * Return <tt>true</tt>, if the current content chunk is last,
      * or <tt>false</tt>, if there are content chunks to follow.
-     * 
+     *
      * @return <tt>true</tt>, if the current content chunk is last,
      * or <tt>false</tt>, if there are content chunks to follow.
      */
@@ -176,7 +174,7 @@ public class HttpContent extends HttpPacket
         if (isBroken(element)) {
             return element;
         }
-        
+
         final Buffer content2 = element.getContent();
         if (content2 != null && content2.hasRemaining()) {
             content = Buffers.appendBuffers(null, content, content2);
@@ -244,7 +242,7 @@ public class HttpContent extends HttpPacket
             this.last = last;
             return (T) this;
         }
-        
+
         /**
          * Set the <tt>HttpContent</tt> chunk content {@link Buffer}.
          *

@@ -365,11 +365,9 @@ public class SSLBaseFilter extends BaseFilter {
 
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized(connection) {
-            final Buffer output =
-                    wrapAll(ctx, obtainSslConnectionContext(connection));
+            final Buffer output = wrapAll(ctx, obtainSslConnectionContext(connection));
 
-            final TransportContext transportContext =
-                    ctx.getTransportContext();
+            final TransportContext transportContext = ctx.getTransportContext();
 
             ctx.write(null, output,
                     transportContext.getCompletionHandler(),
@@ -909,20 +907,18 @@ public class SSLBaseFilter extends BaseFilter {
         }
     }
 
-    protected SSLConnectionContext obtainSslConnectionContext(
-            final Connection connection) {
+    protected SSLConnectionContext obtainSslConnectionContext( final Connection connection) {
         SSLConnectionContext sslCtx = SSL_CTX_ATTR.get(connection);
         if (sslCtx == null) {
             sslCtx = createSslConnectionContext(connection);
             SSL_CTX_ATTR.set(connection, sslCtx);
         }
-        
+
         return sslCtx;
     }
-    
+
     @SuppressWarnings("MethodMayBeStatic")
-    protected SSLConnectionContext createSslConnectionContext(
-            final Connection connection) {
+    protected SSLConnectionContext createSslConnectionContext( final Connection connection) {
         return new SSLConnectionContext(connection);
     }
 
@@ -981,9 +977,7 @@ public class SSLBaseFilter extends BaseFilter {
         try {
             return sslCtx.getSslEngine().getSession().getPeerCertificates();
         } catch( Throwable t ) {
-            if (LOGGER.isLoggable(Level.FINE)) {
-                LOGGER.log(Level.FINE,"Error getting client certs", t);
-            }
+            LOGGER.log(Level.FINE,"Error getting client certs", t);
             return null;
         }
     }
@@ -1207,5 +1201,16 @@ public class SSLBaseFilter extends BaseFilter {
 
             return originalMessage;
         }
+    }
+
+
+    // don't move to own file, Tyrus has a dependency on this interface
+    public interface HandshakeListener {
+        default void onInit(Connection<?> connection, SSLEngine sslEngine) {
+            // nothing
+        }
+        void onStart(Connection<?> connection);
+        void onComplete(Connection<?> connection);
+        void onFailure(Connection<?> connection, Throwable t);
     }
 }

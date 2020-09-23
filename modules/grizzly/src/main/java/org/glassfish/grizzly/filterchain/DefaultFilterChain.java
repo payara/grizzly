@@ -253,14 +253,14 @@ public final class DefaultFilterChain extends ListFacadeFilterChain {
         NextAction nextNextAction;
         do {
             if (LOGGER.isLoggable(Level.FINEST)) {
-                LOGGER.log(Level.FINE, "Execute filter. filter={0} context={1}",
+                LOGGER.log(Level.FINE, "before filter execution. filter={0} context={1}",
                         new Object[]{currentFilter, ctx});
             }
             // execute the task
             nextNextAction = executor.execute(currentFilter, ctx);
 
             if (LOGGER.isLoggable(Level.FINEST)) {
-                LOGGER.log(Level.FINE, "after execute filter. filter={0} context={1} nextAction={2}",
+                LOGGER.log(Level.FINE, "after filter execution. filter={0} context={1} nextAction={2}",
                         new Object[]{currentFilter, ctx, nextNextAction});
             }
         } while (nextNextAction.type() == RerunFilterAction.TYPE);

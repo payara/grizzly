@@ -41,14 +41,13 @@ import org.glassfish.grizzly.ssl.SSLBaseFilter;
 public class Http2AddOn implements AddOn {
 
     private static final Logger LOGGER = Grizzly.logger(Http2AddOn.class);
-    
+
     private final Http2Configuration http2Configuration;
 
 
     // ----------------------------------------------------------- Constructors
 
 
-    @SuppressWarnings("unused")
     public Http2AddOn() {
         this(Http2Configuration.builder().build());
     }
@@ -64,15 +63,17 @@ public class Http2AddOn implements AddOn {
 
     @Override
     public void setup(NetworkListener networkListener, FilterChainBuilder builder) {
+        LOGGER.config(() -> String.format("setup(networkListener=%s, builder=%s)", networkListener, builder));
         final TCPNIOTransport transport = networkListener.getTransport();
-        
+
         if (networkListener.isSecure() && !AlpnSupport.isEnabled()) {
-            LOGGER.warning("TLS ALPN (Application-Layer Protocol Negotiation) support is not available. HTTP/2 support will not be enabled.");
+            LOGGER.warning("TLS ALPN (Application-Layer Protocol Negotiation) support is not available."
+                + " HTTP/2 support will not be enabled.");
             return;
         }
-        
+
         final Http2ServerFilter http2Filter = updateFilterChain(builder);
-        
+
         if (networkListener.isSecure()) {
             configureAlpn(transport, http2Filter, builder);
         }
@@ -95,30 +96,26 @@ public class Http2AddOn implements AddOn {
 
 
     private Http2ServerFilter updateFilterChain(final FilterChainBuilder builder) {
-        
-        final int codecFilterIdx = builder.indexOfType(
-                org.glassfish.grizzly.http.HttpServerFilter.class);
-
-        final Http2ServerFilter http2HandlerFilter =
-                new Http2ServerFilter(http2Configuration);
-        
+        final int codecFilterIdx = builder.indexOfType(org.glassfish.grizzly.http.HttpServerFilter.class);
+        final Http2ServerFilter http2HandlerFilter = new Http2ServerFilter(http2Configuration);
         http2HandlerFilter.setLocalMaxFramePayloadSize(http2Configuration.getMaxFramePayloadSize());
         builder.add(codecFilterIdx + 1, http2HandlerFilter);
-        
         return http2HandlerFilter;
     }
-    
+
     private static void configureAlpn(final Transport transport,
                                       final Http2ServerFilter http2Filter,
                                       final FilterChainBuilder builder) {
-        
-        final int idx = builder.indexOfType(SSLBaseFilter.class);
-        if (idx != -1) {
-            final SSLBaseFilter sslFilter = (SSLBaseFilter) builder.get(idx);
+        LOGGER.finest(() -> String.format("configureAlpn(transport=%s, http2Filter=%s, builder=%s)",
+                transport, http2Filter, builder));
 
-            AlpnSupport.getInstance().configure(sslFilter);
-            AlpnSupport.getInstance().setServerSideNegotiator(transport,
-                    new AlpnServerNegotiatorImpl(http2Filter));
+        final int idx = builder.indexOfType(SSLBaseFilter.class);
+        if (idx == -1) {
+            LOGGER.warning("No usable SSLBaseFilter found!");
+            return;
         }
+        final SSLBaseFilter sslFilter = (SSLBaseFilter) builder.get(idx);
+        AlpnSupport.getInstance().configure(sslFilter);
+        AlpnSupport.getInstance().setServerSideNegotiator(transport, new AlpnServerNegotiatorImpl(http2Filter));
     }
 }
