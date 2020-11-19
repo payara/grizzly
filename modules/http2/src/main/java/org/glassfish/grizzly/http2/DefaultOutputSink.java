@@ -274,7 +274,7 @@ class DefaultOutputSink implements StreamOutputSink {
                 http2Session.getDeflaterLock().lock();
                 lockedByMe = true;
                 final boolean logging = NetLogger.isActive();
-                final Map<String,String> capture = ((logging) ? new HashMap<>() : null);
+                final Map<String,String> capture = logging ? new HashMap<>() : null;
                 headerFrames = http2Session.encodeHttpHeaderAsHeaderFrames(
                         ctx, httpHeader, stream.getId(), dontSendPayload, null, capture);
                 if (logging) {
