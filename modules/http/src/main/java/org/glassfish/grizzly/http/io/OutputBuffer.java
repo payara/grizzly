@@ -75,7 +75,7 @@ import static org.glassfish.grizzly.Writer.Reentrant;
  * to the HTTP messaging system in Grizzly.
  */
 public class OutputBuffer {
-    
+
     protected static final Logger LOGGER = Grizzly.logger(OutputBuffer.class);
 
     private static final int DEFAULT_BUFFER_SIZE =
@@ -87,7 +87,7 @@ public class OutputBuffer {
                     1024 * 64 + 1);
 
     private static final int MIN_BUFFER_SIZE = 512;
-    
+
     /**
      * Flag indicating whether or not async operations are being used on the
      * input streams.
@@ -109,8 +109,7 @@ public class OutputBuffer {
     // if it's not possible to write its content in this thread
     private final ByteArrayCloner cloner = new ByteArrayCloner(temporaryWriteBuffer);
 
-    private final List<LifeCycleListener> lifeCycleListeners =
-            new ArrayList<>(2);
+    private final List<LifeCycleListener> lifeCycleListeners = new ArrayList<>(2);
 
     private boolean committed;
 
@@ -131,7 +130,7 @@ public class OutputBuffer {
 
     private MemoryManager memoryManager;
     private Connection connection;
-    
+
     private WriteHandler handler;
 
     private InternalWriteHandler asyncWriteHandler;
@@ -139,25 +138,25 @@ public class OutputBuffer {
     private boolean fileTransferRequested;
 
     private int bufferSize = DEFAULT_BUFFER_SIZE;
-    
+
     protected boolean sendfileEnabled;
-    
+
     private HttpHeader outputHeader;
 
     // Runnable to be used for async notifyWritePossible() notifications,
     // which helps to limit the number of reentrants
     private Runnable writePossibleRunnable;
-    
+
     private Builder builder;
-    
+
     private boolean isNonBlockingWriteGuaranteed;
     private boolean isLastWriteNonBlocking;
-    
+
     private HttpContext httpContext;
 
     private Supplier<Map<String,String>> trailersSupplier;
-    
-    
+
+
     // ---------------------------------------------------------- Public Methods
 
 
@@ -241,7 +240,7 @@ public class OutputBuffer {
         if (currentBuffer == null) {
             this.bufferSize = bufferSizeLocal;
         }
-        
+
         if (charsArray != null &&
                 charsArray.length < bufferSizeLocal) {
             final char[] newCharsArray = new char[bufferSizeLocal];
@@ -299,7 +298,7 @@ public class OutputBuffer {
         }
 
         size += (charsArrayLength << 1);
-        
+
         return size;
     }
 
@@ -327,7 +326,7 @@ public class OutputBuffer {
 
         if (charsArray != null) {
             charsArrayLength = 0;
-            
+
             if (charsArray.length < MAX_CHAR_BUFFER_SIZE) {
                 charsBuffer.clear();
             } else {
@@ -361,7 +360,7 @@ public class OutputBuffer {
 
     public void endRequest()
         throws IOException {
-        
+
         if (finished) {
             return;
         }
@@ -371,7 +370,7 @@ public class OutputBuffer {
             asyncWriteHandler = null;
             asyncWriteQueueHandlerLocal.detach();
         }
-        
+
         if (!closed) {
             try {
                 close();
@@ -397,7 +396,7 @@ public class OutputBuffer {
     public void acknowledge() throws IOException {
 
         ctx.write(outputHeader, IS_BLOCKING);
-        
+
     }
 
 
@@ -422,7 +421,7 @@ public class OutputBuffer {
 
         charsArray[charsArrayLength++] = (char) c;
     }
-    
+
     public void write(char[] cbuf, int off, int len) throws IOException {
 
         connection.assertOpen();
@@ -438,18 +437,18 @@ public class OutputBuffer {
         }
 
         checkCharBuffer();
-        
+
         final int remaining = charsArray.length - charsArrayLength;
-        
+
         if (len <= remaining) {
             System.arraycopy(cbuf, off, charsArray, charsArrayLength, len);
             charsArrayLength += len;
         } else if (len - remaining < remaining) {
             System.arraycopy(cbuf, off, charsArray, charsArrayLength, remaining);
             charsArrayLength += remaining;
-            
+
             flushCharsToBuf(true);
-            
+
             System.arraycopy(cbuf, off + remaining, charsArray, 0, len - remaining);
             charsArrayLength = len - remaining;
         } else {
@@ -481,17 +480,17 @@ public class OutputBuffer {
         if (writingBytes()) {
             flushBinaryBuffers(false);
         }
-        
+
         checkCharBuffer();
-        
+
         if (charsArray.length - charsArrayLength >= len) {
             str.getChars(off, off + len,
                          charsArray, charsArrayLength);
             charsArrayLength += len;
-            
+
             return;
         }
-        
+
         int offLocal = off;
         int lenLocal = len;
 
@@ -529,9 +528,9 @@ public class OutputBuffer {
         if (writingChars()) {
             flushCharsToBuf(false);
         }
-        
+
         checkCurrentBuffer();
-        
+
         if (!currentBuffer.hasRemaining()) {
             if (canWritePayloadChunk()) {
                 doCommit();
@@ -544,7 +543,7 @@ public class OutputBuffer {
                 checkCurrentBuffer();
             }
         }
-        
+
         currentBuffer.put((byte) b);
     }
 
@@ -654,7 +653,7 @@ public class OutputBuffer {
         }
 
 
-        
+
         ctx.write(f, handler);
     }
 
@@ -670,7 +669,7 @@ public class OutputBuffer {
         if (writingChars()) {
             flushCharsToBuf(false);
         }
-        
+
         // Copy the content of the b[] to the currentBuffer, if it's possible
         if (bufferSize >= len &&
                 (currentBuffer == null || currentBuffer.remaining() >= len)) {
@@ -680,7 +679,7 @@ public class OutputBuffer {
             currentBuffer.put(b, off, len);
         } else if (canWritePayloadChunk()) {
             // If b[] is too big - try to send it to wire right away (if chunking is allowed)
-            
+
             // wrap byte[] with a thread local buffer
             temporaryWriteBuffer.reset(b, off, len);
 
@@ -691,13 +690,13 @@ public class OutputBuffer {
             doCommit();
             if (compositeBuffer != null) { // if we write a composite buffer
                 compositeBuffer.append(temporaryWriteBuffer);
-                
+
                 flushBuffer(compositeBuffer, false, cloner);
                 compositeBuffer = null;
             } else { // we write just mutableHeapBuffer content
                 flushBuffer(temporaryWriteBuffer, false, cloner);
             }
-            
+
             blockAfterWriteIfNeeded();
         } else {
             // if we can't write the chunk - buffer it.
@@ -706,7 +705,7 @@ public class OutputBuffer {
             cloneBuffer.put(b, off, len);
             cloneBuffer.flip();
             checkCompositeBuffer();
-            
+
             compositeBuffer.append(cloneBuffer);
         }
     }
@@ -721,7 +720,7 @@ public class OutputBuffer {
             return;
         }
         closed = true;
-        
+
         connection.assertOpen();
 
         // commit the response (mark it as committed)
@@ -733,7 +732,7 @@ public class OutputBuffer {
             // and we need to send trailer
             forceCommitHeaders(true);
         }
-        
+
         blockAfterWriteIfNeeded();
     }
 
@@ -753,7 +752,7 @@ public class OutputBuffer {
             forceCommitHeaders(false);
         }
 
-        blockAfterWriteIfNeeded();      
+        blockAfterWriteIfNeeded();
     }
 
 
@@ -789,13 +788,13 @@ public class OutputBuffer {
      */
     public void writeBuffer(final Buffer buffer) throws IOException {
         connection.assertOpen();
-        
+
         updateNonBlockingStatus();
-        
+
         finishCurrentBuffer();
         checkCompositeBuffer();
         compositeBuffer.append(buffer);
-        
+
         if (canWritePayloadChunk() &&
                 compositeBuffer.remaining() > bufferSize) {
             flush();
@@ -820,15 +819,15 @@ public class OutputBuffer {
     public boolean canWrite(@SuppressWarnings("UnusedParameters") final int length) {
         return canWrite();
     }
-    
+
     /**
      * @see AsyncQueueWriter#canWrite(org.glassfish.grizzly.Connection)
      */
     public boolean canWrite() {
         if (IS_BLOCKING || isNonBlockingWriteGuaranteed) {
             return true;
-        }        
-        
+        }
+
         if (httpContext.getOutputSink().canWrite()) {
             isNonBlockingWriteGuaranteed = true;
             return true;
@@ -842,8 +841,7 @@ public class OutputBuffer {
      */
     @Deprecated
     @SuppressWarnings("UnusedParameters")
-    public void notifyCanWrite(final WriteHandler handler,
-                               @SuppressWarnings("UnusedParameters") final int length) {
+    public void notifyCanWrite(final WriteHandler handler, @SuppressWarnings("UnusedParameters") final int length) {
         notifyCanWrite(handler);
     }
 
@@ -856,27 +854,26 @@ public class OutputBuffer {
             handler.onError(connection.getCloseReason().getCause());
             return;
         }
-        
+
         this.handler = handler;
-        
+
         if (isNonBlockingWriteGuaranteed || canWrite()) {
             final Reentrant reentrant = Reentrant.getWriteReentrant();
-            if (!reentrant.isMaxReentrantsReached()) {
-                notifyWritePossible();
-            } else {
+            if (reentrant.isMaxReentrantsReached()) {
                 notifyWritePossibleAsync();
+            } else {
+                notifyWritePossible();
             }
-            
             return;
         }
-        
+
         // This point might be reached if OutputBuffer is in non-blocking mode
         assert !IS_BLOCKING;
 
         if (asyncWriteHandler == null) {
             asyncWriteHandler = new InternalWriteHandler(this);
         }
-        
+
         try {
             // If exception occurs here - it's from WriteHandler, so it must
             // have been processed by WriteHandler.onError().
@@ -902,15 +899,14 @@ public class OutputBuffer {
         if (!Threads.isService()) {
             return null;
         }
-        
+
         final ExecutorService es = connection.getTransport().getWorkerThreadPool();
         return es != null && !es.isShutdown() ? es : null;
-    }    
-    
+    }
+
     /**
      * Notify WriteHandler asynchronously
      */
-    @SuppressWarnings("unchecked")
     private void notifyWritePossibleAsync() {
         if (writePossibleRunnable == null) {
             writePossibleRunnable = new Runnable() {
@@ -920,7 +916,7 @@ public class OutputBuffer {
                 }
             };
         }
-        
+
         connection.executeInEventThread(IOEvent.WRITE, writePossibleRunnable);
     }
 
@@ -932,7 +928,7 @@ public class OutputBuffer {
 
         if (localHandler != null) {
             final Reentrant reentrant = Reentrant.getWriteReentrant();
-            
+
             try {
                 handler = null;
                 reentrant.inc();
@@ -954,20 +950,20 @@ public class OutputBuffer {
         return outputHeader.isChunkingAllowed()
                 || outputHeader.getContentLength() != -1;
     }
-    
+
     private void blockAfterWriteIfNeeded()
             throws IOException {
-        
+
         if (IS_BLOCKING || isNonBlockingWriteGuaranteed || isLastWriteNonBlocking) {
             return;
         }
-        
+
         if (httpContext.getOutputSink().canWrite()) {
             return;
         }
-        
+
         final FutureImpl<Boolean> future = Futures.createSafeFuture();
-        
+
         httpContext.getOutputSink().notifyCanWrite(new WriteHandler() {
 
             @Override
@@ -980,7 +976,7 @@ public class OutputBuffer {
                 future.failure(Exceptions.makeIOException(t));
             }
         });
-        
+
         try {
             final long writeTimeout =
                     connection.getWriteTimeout(TimeUnit.MILLISECONDS);
@@ -1008,10 +1004,10 @@ public class OutputBuffer {
         if (charsArrayLength > 0) {
             flushCharsToBuf(false);
         }
-        
+
         return flushBinaryBuffers(isLast);
     }
-    
+
     private boolean flushBinaryBuffers(final boolean isLast)
             throws IOException {
         if (!outputHeader.isChunkingAllowed()
@@ -1177,7 +1173,9 @@ public class OutputBuffer {
 
     private void flushCharsToBuf(final CharBuffer charBuf, final boolean canFlushToNet) throws IOException {
 
-        if (!charBuf.hasRemaining()) return;
+        if (!charBuf.hasRemaining()) {
+            return;
+        }
 
         // flush the buffer - need to take care of encoding at this point
         final CharsetEncoder enc = getEncoder();
@@ -1226,17 +1224,19 @@ public class OutputBuffer {
     private void flushBinaryBuffersIfNeeded() throws IOException {
         if (compositeBuffer != null) { // this actually checks wheather current buffer was overloaded during encoding so we need to flush
             flushBinaryBuffers(false);
-            
+
             blockAfterWriteIfNeeded();
         }
     }
 
     private void notifyCommit() throws IOException {
-        for (int i = 0, len = lifeCycleListeners.size(); i < len; i++) {
-            lifeCycleListeners.get(i).onCommit();
+        // the collection is not synchronized and may be accessed in parallel
+        final LifeCycleListener[] array = lifeCycleListeners.toArray(new LifeCycleListener[lifeCycleListeners.size()]);
+        for (LifeCycleListener lifeCycleListener : array) {
+            lifeCycleListener.onCommit();
         }
     }
-        
+
     private void updateNonBlockingStatus() {
         isLastWriteNonBlocking = isNonBlockingWriteGuaranteed;
         isNonBlockingWriteGuaranteed = false;
@@ -1256,23 +1256,23 @@ public class OutputBuffer {
         public ByteArrayCloner(final TemporaryHeapBuffer temporaryWriteBuffer) {
             this.temporaryWriteBuffer = temporaryWriteBuffer;
         }
-        
+
         @Override
         public Buffer clone(final Connection connection,
                 final Buffer originalMessage) {
-            
+
             // Buffer was disposed somewhere on the way to async write queue -
             // just return the original message
             if (temporaryWriteBuffer.isDisposed()) {
                 return originalMessage;
             }
-            
+
             return clone0(connection.getMemoryManager(), originalMessage);
         }
 
         Buffer clone0(final MemoryManager memoryManager,
                 final Buffer originalMessage) {
-            
+
             if (originalMessage.isComposite()) {
                 final CompositeBuffer compositeBuffer = (CompositeBuffer) originalMessage;
                 compositeBuffer.shrink();
@@ -1287,18 +1287,18 @@ public class OutputBuffer {
                                 temporaryWriteBuffer.cloneContent(memoryManager));
                     }
                 }
-                
+
                 return originalMessage;
             }
-                
+
             return temporaryWriteBuffer.cloneContent(memoryManager);
         }
     }
-    
+
     public interface LifeCycleListener {
         void onCommit() throws IOException;
     }
-    
+
     private static class InternalWriteHandler implements WriteHandler {
 
         private volatile OutputBuffer outputBuffer;
@@ -1319,7 +1319,7 @@ public class OutputBuffer {
                             new EOFException());
             }
         }
-        
+
         @Override
         public void onWritePossible() throws Exception {
             final OutputBuffer localOB = outputBuffer;
@@ -1362,7 +1362,7 @@ public class OutputBuffer {
                 }
             }
         }
-        
+
 
         // ----------------------------------------------------- Private Methods
 
