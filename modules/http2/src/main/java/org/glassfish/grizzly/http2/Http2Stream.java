@@ -624,8 +624,8 @@ public class Http2Stream implements AttributeStorage, OutputSink, Closeable {
             http2Session.streamsToFlushInput.add(this);
         }
     }
-    
-    void flushInputData() {
+
+    void flushInputData() throws Http2SessionException {
         final Buffer cachedInputBufferLocal = cachedInputBuffer;
         final boolean cachedIsLastLocal = cachedIsLast;
         cachedInputBuffer = null;
@@ -646,11 +646,15 @@ public class Http2Stream implements AttributeStorage, OutputSink, Closeable {
             }
 
             final int size = cachedInputBufferLocal.remaining();
-            if (!inputBuffer.offer(cachedInputBufferLocal, cachedIsLastLocal)) {
-                // if we can't add this buffer to the stream input buffer -
-                // we have to release the part of connection window allocated
-                // for the buffer
-                http2Session.ackConsumedData(size);
+            try {
+                if (!inputBuffer.offer(cachedInputBufferLocal, cachedIsLastLocal)) {
+                    // if we can't add this buffer to the stream input buffer -
+                    // we have to release the part of connection window allocated
+                    // for the buffer
+                    http2Session.ackConsumedData(size);
+                }
+            } catch (final RuntimeException e) {
+                throw new Http2SessionException(ErrorCode.PROTOCOL_ERROR, e.getMessage());
             }
         }
     }
