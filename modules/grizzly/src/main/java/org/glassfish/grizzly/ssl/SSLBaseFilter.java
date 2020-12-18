@@ -679,6 +679,12 @@ public class SSLBaseFilter extends BaseFilter {
                                 connection, sslCtx, tmpNetBuffer);
                         handshakeStatus = sslCtx.getSslEngine().getHandshakeStatus();
 
+                        if (handshakeStatus.equals(HandshakeStatus.NEED_WRAP) && sslCtx.getSslEngine().isInboundDone()) {
+                            LOGGER.log(Level.FINER, "Inbound connection is closed, " +
+                                    "cancelling handshake to avoid infinite loop");
+                            throw new SSLException("SSL wrap error: Inbound connection is closed");
+                        }
+
                         break;
                     }
 

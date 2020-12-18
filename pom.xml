@@ -99,11 +99,24 @@
         </developerConnection>
         <url>https://github.com/eclipse-ee4j/grizzly</url>
       <tag>HEAD</tag>
-  </scm>
+    </scm>
     <organization>
         <name>Oracle Corporation</name>
         <url>http://www.oracle.com</url>
     </organization>
+    <repositories>
+        <repository>
+            <id>payara-patched-externals</id>
+            <name>Payara Patched Externals</name>
+            <url>https://raw.github.com/payara/Payara_PatchedProjects/master</url>
+            <releases>
+                <enabled>true</enabled>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
     <build>
         <extensions>
             <extension>
