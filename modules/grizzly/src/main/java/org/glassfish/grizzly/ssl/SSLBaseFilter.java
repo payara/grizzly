@@ -15,7 +15,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  * 
  * Contributors:
- *   Payara Services - Propagate stop action on a closed SSL connection
+ *   Payara Services - Propagate stop action on a closed SSL connection and 
+ *                     prevent infinite loop during handshaking
  */
 
 package org.glassfish.grizzly.ssl;
