@@ -15,7 +15,8 @@
  * SPDX-License-Identifier: EPL-2.0 OR GPL-2.0 WITH Classpath-exception-2.0
  * 
  * Contributors:
- *   Payara Services - Propagate stop action on a closed SSL connection
+ *   Payara Services - Propagate stop action on a closed SSL connection and 
+ *                     prevent infinite loop during handshaking
  */
 
 package org.glassfish.grizzly.ssl;
@@ -678,6 +679,12 @@ public class SSLBaseFilter extends BaseFilter {
                         tmpNetBuffer = handshakeWrap(
                                 connection, sslCtx, tmpNetBuffer);
                         handshakeStatus = sslCtx.getSslEngine().getHandshakeStatus();
+
+                        if (handshakeStatus.equals(HandshakeStatus.NEED_WRAP) && sslCtx.getSslEngine().isInboundDone()) {
+                            LOGGER.log(Level.FINER, "Inbound connection is closed, " +
+                                    "cancelling handshake to avoid infinite loop");
+                            throw new SSLException("SSL wrap error: Inbound connection is closed");
+                        }
 
                         break;
                     }
