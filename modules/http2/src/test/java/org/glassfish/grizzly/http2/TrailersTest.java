@@ -36,7 +36,6 @@ import org.glassfish.grizzly.http.util.MimeHeaders;
 import org.glassfish.grizzly.memory.Buffers;
 import org.glassfish.grizzly.memory.MemoryManager;
 import org.glassfish.grizzly.nio.transport.TCPNIOConnectorHandler;
-import org.glassfish.grizzly.nio.transport.TCPNIOTransport;
 import org.junit.After;
 import org.junit.Test;
 
@@ -77,10 +76,10 @@ public class TrailersTest extends AbstractHttp2Test {
         configureHttpServer();
         startHttpServer(new HttpHandler() {
             @Override
-            public void service(final Request request, final Response response) throws Exception {
+            public void service(Request request, Response response) throws Exception {
                 response.setContentType("text/plain");
                 final InputStream in = request.getInputStream();
-                final StringBuilder sb = new StringBuilder();
+                StringBuilder sb = new StringBuilder();
                 int b;
                 while ((b = in.read()) != -1) {
                     sb.append((char) b);
@@ -105,7 +104,7 @@ public class TrailersTest extends AbstractHttp2Test {
 
         final Filter filter = new BaseFilter() {
             @Override
-            public NextAction handleRead(final FilterChainContext ctx) throws IOException {
+            public NextAction handleRead(FilterChainContext ctx) throws IOException {
                 final HttpContent httpContent = ctx.getMessage();
                 try {
                     if (lastProcessed.get()) {
@@ -122,7 +121,7 @@ public class TrailersTest extends AbstractHttp2Test {
                         latch.countDown();
                     } else {
                         assertFalse(httpContent instanceof HttpTrailer);
-                        final int result = contentCount.incrementAndGet();
+                        int result = contentCount.incrementAndGet();
                         if (result == 1) {
                             assertTrue(httpContent.getContent().remaining() == 0); // response
                         } else if (result == 2) {
@@ -131,7 +130,7 @@ public class TrailersTest extends AbstractHttp2Test {
                             fail("Unexpected content");
                         }
                     }
-                } catch (final Throwable t) {
+                } catch (Throwable t) {
                     error.set(t);
                     latch.countDown();
                 }
@@ -140,11 +139,17 @@ public class TrailersTest extends AbstractHttp2Test {
             }
         };
         final Connection<?> c = getConnection("localhost", PORT, filter);
-        final HttpRequestPacket.Builder builder = HttpRequestPacket.builder();
-        final HttpRequestPacket request = builder.method(Method.POST).uri("/echo")
-            .protocol(Protocol.HTTP_2_0).host("localhost:" + PORT).build();
-        c.write(HttpTrailer.builder(request).content(Buffers.wrap(MemoryManager.DEFAULT_MEMORY_MANAGER, "a=b&c=d"))
-            .last(true).header("trailer-a", "value-a").header("trailer-b", "value-b").build());
+        HttpRequestPacket.Builder builder = HttpRequestPacket.builder();
+        HttpRequestPacket request = builder.method(Method.POST)
+                .uri("/echo")
+                .protocol(Protocol.HTTP_2_0)
+                .host("localhost:" + PORT).build();
+        c.write(HttpTrailer.builder(request)
+                .content(Buffers.wrap(MemoryManager.DEFAULT_MEMORY_MANAGER, "a=b&c=d"))
+                .last(true)
+                .header("trailer-a", "value-a")
+                .header("trailer-b", "value-b")
+                .build());
         assertTrue(latch.await(10, TimeUnit.SECONDS));
         final Throwable t = error.get();
         if (t != null) {
@@ -159,7 +164,7 @@ public class TrailersTest extends AbstractHttp2Test {
         configureHttpServer();
         startHttpServer(new HttpHandler() {
             @Override
-            public void service(final Request request, final Response response) throws Exception {
+            public void service(Request request, Response response) throws Exception {
                 response.setContentType("text/plain");
                 final InputStream in = request.getInputStream();
                 //noinspection StatementWithEmptyBody
@@ -179,19 +184,20 @@ public class TrailersTest extends AbstractHttp2Test {
 
         final Filter filter = new BaseFilter() {
             @Override
-            public NextAction handleRead(final FilterChainContext ctx) throws IOException {
+            public NextAction handleRead(FilterChainContext ctx) throws IOException {
                 final HttpContent httpContent = ctx.getMessage();
                 try {
                     if (httpContent.isLast()) {
                         assertTrue(httpContent instanceof HttpTrailer);
                         final MimeHeaders trailers = ((HttpTrailer) httpContent).getHeaders();
+
                         assertEquals(2, trailers.size());
                         assertEquals("value-a", trailers.getHeader("trailer-a"));
                         assertEquals("value-b", trailers.getHeader("trailer-b"));
+                        latch.countDown();
                     }
-                } catch (final Throwable t) {
+                } catch (Throwable t) {
                     error.set(t);
-                } finally {
                     latch.countDown();
                 }
 
@@ -199,14 +205,20 @@ public class TrailersTest extends AbstractHttp2Test {
             }
         };
         final Connection<?> c = getConnection("localhost", PORT, filter);
-        final HttpRequestPacket.Builder builder = HttpRequestPacket.builder();
-        final HttpRequestPacket request = builder.method(Method.POST).uri("/echo")
-            .protocol(Protocol.HTTP_2_0).host("localhost:" + PORT).build();
-        // write the request
-        c.write(HttpContent.builder(request).last(false).build());
-        // write the trailer
-        c.write(HttpTrailer.builder(request).content(Buffers.EMPTY_BUFFER).last(true)
-            .header("trailer-a", "value-a").header("trailer-b", "value-b").build());
+        HttpRequestPacket.Builder builder = HttpRequestPacket.builder();
+        HttpRequestPacket request = builder.method(Method.POST)
+                .uri("/echo")
+                .protocol(Protocol.HTTP_2_0)
+                .host("localhost:" + PORT).build();
+        c.write(HttpContent.builder(request) // write the request
+                .last(false)
+                .build());
+        c.write(HttpTrailer.builder(request) // write the trailer
+                .content(Buffers.EMPTY_BUFFER)
+                .last(true)
+                .header("trailer-a", "value-a")
+                .header("trailer-b", "value-b")
+                .build());
         assertTrue(latch.await(10, TimeUnit.SECONDS));
         final Throwable t = error.get();
         if (t != null) {
@@ -237,9 +249,12 @@ public class TrailersTest extends AbstractHttp2Test {
         final FilterChain clientChain =
                 createClientFilterChainAsBuilder(false, true, clientFilter).build();
 
-        final TCPNIOTransport transport = httpServer.getListener("grizzly").getTransport();
-        final SocketConnectorHandler connectorHandler = TCPNIOConnectorHandler.builder(transport).processor(clientChain).build();
-        final Future<Connection> connectFuture = connectorHandler.connect(host, port);
+        SocketConnectorHandler connectorHandler = TCPNIOConnectorHandler.builder(
+                httpServer.getListener("grizzly").getTransport())
+                .processor(clientChain)
+                .build();
+
+        Future<Connection> connectFuture = connectorHandler.connect(host, port);
         return connectFuture.get(10, TimeUnit.SECONDS);
 
     }
