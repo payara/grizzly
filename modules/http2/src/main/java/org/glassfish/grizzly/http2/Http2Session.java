@@ -611,7 +611,9 @@ public class Http2Session {
 
                 @Override
                 public void failed(final Throwable throwable) {
-                    LOGGER.log(Level.WARNING, "Unable to write GOAWAY.  Terminating session.", throwable);
+                    if (LOGGER.isLoggable(Level.FINE)) {
+                        LOGGER.log(Level.FINE, "Unable to write GOAWAY.  Terminating session.", throwable);
+                    }
                     close();
                 }
 
@@ -622,7 +624,9 @@ public class Http2Session {
 
                 @Override
                 public void cancelled() {
-                    LOGGER.log(Level.FINE, "GOAWAY write cancelled.  Terminating session.");
+                    if (LOGGER.isLoggable(Level.FINE)) {
+                        LOGGER.log(Level.FINE, "GOAWAY write cancelled.  Terminating session.");
+                    }
                     close();
                 }
             }, null);
