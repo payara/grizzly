@@ -292,9 +292,7 @@ public class Http2Session {
             throws Http2SessionException {
         // we assume the passed buffer represents only this frame, no remainders allowed
         final int len = getFrameSize(buffer);
-        if (buffer.remaining() != len) {
-            throw new Http2SessionException(ErrorCode.FRAME_SIZE_ERROR);
-        }
+        assert buffer.remaining() == len;
 
         final int i1 = buffer.getInt();
 
