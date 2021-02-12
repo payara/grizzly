@@ -292,7 +292,9 @@ public class Http2Session {
             throws Http2SessionException {
         // we assume the passed buffer represents only this frame, no remainders allowed
         final int len = getFrameSize(buffer);
-        assert buffer.remaining() == len;
+        if (buffer.remaining() != len) {
+            throw new Http2SessionException(ErrorCode.FRAME_SIZE_ERROR);
+        }
 
         final int i1 = buffer.getInt();
 
@@ -611,9 +613,7 @@ public class Http2Session {
 
                 @Override
                 public void failed(final Throwable throwable) {
-                    if (LOGGER.isLoggable(Level.FINE)) {
-                        LOGGER.log(Level.FINE, "Unable to write GOAWAY.  Terminating session.", throwable);
-                    }
+                    LOGGER.log(Level.WARNING, "Unable to write GOAWAY.  Terminating session.", throwable);
                     close();
                 }
 
@@ -624,9 +624,7 @@ public class Http2Session {
 
                 @Override
                 public void cancelled() {
-                    if (LOGGER.isLoggable(Level.FINE)) {
-                        LOGGER.log(Level.FINE, "GOAWAY write cancelled.  Terminating session.");
-                    }
+                    LOGGER.log(Level.FINE, "GOAWAY write cancelled.  Terminating session.");
                     close();
                 }
             }, null);
@@ -672,6 +670,7 @@ public class Http2Session {
 
     // Must be locked by sessionLock
     private void pruneStreams() {
+        LOGGER.log(Level.FINE, "pruneStreams()");
         // close streams that rank above the last stream ID specified by the GOAWAY frame.
         // Allow other streams to continue processing.  Once the concurrent stream count reaches zero,
         // the session will be closed.
@@ -1192,6 +1191,7 @@ public class Http2Session {
      * Called from {@link Http2Stream} once stream is completely closed.
      */
     void deregisterStream() {
+        LOGGER.fine("deregisterStream()");
         final boolean isCloseSession;
         synchronized (sessionLock) {
             decStreamCount();
